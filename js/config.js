@@ -12,7 +12,8 @@ const CONFIG = {
 
     // Authorized email addresses (only these can access the portal)
     AUTHORIZED_EMAILS: [
-        'drinoman@gmail.com'
+        'drinoman@gmail.com',
+        'aldrin.gdf@gmail.com'
     ],
 
     // App name

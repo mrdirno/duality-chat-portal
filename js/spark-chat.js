@@ -16,34 +16,45 @@ class SparkChat {
 
     /**
      * Initialize Firestore connection with NAMED DATABASE
-     * The compat SDK doesn't support named databases, so we use the modular API
+     * Uses Firebase modular SDK with proper interop for named database support
      */
     async init(user) {
         this.user = user;
         const dbName = 'helios-spark-zero';
 
         try {
-            // Import modular Firestore functions dynamically
-            // This is required for named database support
-            const { getFirestore, collection, query, orderBy, limitToLast,
-                    onSnapshot, addDoc, serverTimestamp } = await import(
-                'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js'
+            // Import modular SDK functions - use SAME version as compat SDK (9.22.0)
+            // This ensures compatibility between compat auth and modular Firestore
+            const firestoreModule = await import(
+                'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js'
             );
+            const appModule = await import(
+                'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js'
+            );
+
+            const { getFirestore, collection, query, orderBy, limitToLast,
+                    onSnapshot, addDoc, serverTimestamp } = firestoreModule;
+            const { getApp } = appModule;
 
             // Store module references for later use
             this.firestoreModule = { collection, query, orderBy, limitToLast,
                                      onSnapshot, addDoc, serverTimestamp };
 
+            // Get app using modular SDK's getApp() for proper interop
+            // The compat SDK's firebase.initializeApp() registers the app
+            // and modular getApp() can retrieve it
+            const app = getApp();
+
             // Get Firestore instance with NAMED DATABASE
-            const app = firebase.app();
             this.db = getFirestore(app, dbName);
 
             console.log(`Firestore connected to named database: ${dbName}`);
 
         } catch (e) {
             console.error("Firestore init failed:", e);
-            // Alert for debugging
-            alert(`Firestore Error: ${e.message}`);
+            // Show detailed error for debugging
+            const errorMsg = `Firestore Error: ${e.message}\n\nThis may be a Firebase configuration issue. Check console for details.`;
+            alert(errorMsg);
             this.showError("Failed to initialize database");
             return;
         }
@@ -152,25 +163,36 @@ class SparkChat {
         // Check if message already rendered
         if (document.getElementById(`msg-${id}`)) return;
 
+        // Determine if user or operator (anything not 'user' is operator)
+        const isUser = msg.sender === 'user';
+
         const div = document.createElement('div');
         div.id = `msg-${id}`;
-        div.className = `message ${msg.sender === 'user' ? 'user' : 'operator'}`;
+        div.className = `message-row ${isUser ? 'user' : 'operator'}`;
 
         const time = msg.timestamp
             ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
             : 'now';
 
-        const senderLabel = msg.sender === 'user'
+        const senderLabel = isUser
             ? 'You'
-            : (msg.senderName || 'OPERATOR');
+            : (msg.senderName || 'SPARK');
+
+        // Avatar: User gets their initial, operator gets robot icon
+        const avatarContent = isUser
+            ? (this.user?.name?.[0] || this.user?.email?.[0] || 'U').toUpperCase()
+            : '🤖';
 
         div.innerHTML = `
-            <div class="message-header">
-                <span class="message-sender">${this.escapeHtml(senderLabel)}</span>
-                <span class="message-time">${time}</span>
+            <div class="message-avatar ${isUser ? 'user' : 'operator'}">${avatarContent}</div>
+            <div class="message-bubble ${isUser ? 'user' : 'operator'}">
+                <div class="message-header">
+                    <span class="message-sender">${this.escapeHtml(senderLabel)}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-text">${this.escapeHtml(msg.text)}</div>
+                ${msg.status === 'pending' ? '<div class="message-status">Sending...</div>' : ''}
             </div>
-            <div class="message-text">${this.escapeHtml(msg.text)}</div>
-            ${msg.status === 'pending' ? '<div class="message-status">Pending...</div>' : ''}
         `;
 
         this.messagesContainer.appendChild(div);
