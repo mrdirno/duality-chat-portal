@@ -46,12 +46,12 @@ class App {
     /**
      * Show portal screen
      */
-    showPortal(user) {
+    async showPortal(user) {
         this.screens.login.classList.remove('active');
         this.screens.portal.classList.add('active');
 
-        // Initialize Spark chat
-        window.sparkChat.init(user);
+        // Initialize Spark chat (async for modular SDK)
+        await window.sparkChat.init(user);
     }
 
     /**
@@ -88,6 +88,7 @@ class App {
         // Chat form
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
 
         if (chatForm && messageInput) {
             chatForm.addEventListener('submit', async (e) => {
@@ -95,10 +96,27 @@ class App {
                 const text = messageInput.value;
 
                 if (text.trim()) {
-                    const sent = await window.sparkChat.sendMessage(text);
-                    if (sent) {
-                        messageInput.value = '';
-                        this.autoResizeTextarea(messageInput);
+                    // Disable interface
+                    messageInput.disabled = true;
+                    if (sendBtn) sendBtn.disabled = true;
+
+                    try {
+                        const sent = await window.sparkChat.sendMessage(text);
+                        console.log("Message sent result:", sent);
+                        
+                        if (sent) {
+                            messageInput.value = '';
+                            this.autoResizeTextarea(messageInput);
+                            messageInput.focus();
+                        }
+                    } catch (err) {
+                        console.error("Error in submit handler:", err);
+                    } finally {
+                        // Re-enable interface
+                        messageInput.disabled = false;
+                        if (sendBtn) sendBtn.disabled = false;
+                        // Keep focus on input
+                        messageInput.focus();
                     }
                 }
             });

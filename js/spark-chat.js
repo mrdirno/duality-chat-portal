@@ -1,6 +1,8 @@
 /**
  * Spark Chat - Firestore-backed messaging
  * Mirrors local Spark system for global access
+ *
+ * IMPORTANT: Uses Firebase modular SDK for named database support
  */
 
 class SparkChat {
@@ -9,31 +11,43 @@ class SparkChat {
         this.unsubscribe = null;
         this.messagesContainer = null;
         this.user = null;
+        this.firestoreModule = null;
     }
 
     /**
-     * Initialize Firestore connection
+     * Initialize Firestore connection with NAMED DATABASE
+     * The compat SDK doesn't support named databases, so we use the modular API
      */
-    init(user) {
+    async init(user) {
         this.user = user;
         const dbName = 'helios-spark-zero';
-        
+
         try {
-            // Attempt 1: Specific named database
-            this.db = firebase.app().firestore(dbName);
-            console.log(`Firestore connected to: ${dbName}`);
+            // Import modular Firestore functions dynamically
+            // This is required for named database support
+            const { getFirestore, collection, query, orderBy, limitToLast,
+                    onSnapshot, addDoc, serverTimestamp } = await import(
+                'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js'
+            );
+
+            // Store module references for later use
+            this.firestoreModule = { collection, query, orderBy, limitToLast,
+                                     onSnapshot, addDoc, serverTimestamp };
+
+            // Get Firestore instance with NAMED DATABASE
+            const app = firebase.app();
+            this.db = getFirestore(app, dbName);
+
+            console.log(`Firestore connected to named database: ${dbName}`);
+
         } catch (e) {
-            console.warn("Named DB init failed, trying default", e);
-            try {
-                // Attempt 2: Default database
-                this.db = firebase.firestore();
-                console.log("Firestore connected to: (default)");
-            } catch (e2) {
-                console.error("Firestore initialization failed completely", e2);
-                this.showError("Failed to initialize database");
-            }
+            console.error("Firestore init failed:", e);
+            // Alert for debugging
+            alert(`Firestore Error: ${e.message}`);
+            this.showError("Failed to initialize database");
+            return;
         }
-        
+
         this.messagesContainer = document.getElementById('messages-container');
 
         // Start listening for messages
@@ -55,71 +69,77 @@ class SparkChat {
     }
 
     /**
-     * Subscribe to messages collection (real-time)
+     * Subscribe to messages collection (real-time) using modular SDK
      */
     subscribeToMessages() {
         if (this.unsubscribe) {
             this.unsubscribe();
         }
 
-        if (!this.db) return;
+        if (!this.db || !this.firestoreModule) return;
 
-        this.unsubscribe = this.db.collection('spark_messages')
-            .orderBy('timestamp', 'asc')
-            .limitToLast(100)
-            .onSnapshot((snapshot) => {
-                // Clear welcome message on first real message
-                const welcomeMsg = this.messagesContainer.querySelector('.welcome-msg');
-                if (welcomeMsg && snapshot.docs.length > 0) {
-                    welcomeMsg.remove();
-                }
+        const { collection, query, orderBy, limitToLast, onSnapshot } = this.firestoreModule;
 
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        this.renderMessage(change.doc.data(), change.doc.id);
-                    }
-                });
+        // Build query with modular SDK
+        const messagesRef = collection(this.db, 'spark_messages');
+        const q = query(messagesRef, orderBy('timestamp', 'asc'), limitToLast(100));
 
-                // Scroll to bottom
-                this.scrollToBottom();
-            }, (error) => {
-                console.error('Firestore subscription error:', error);
-                this.setConnectionStatus('error', 'Sync Error');
-                // Expose error to user for debugging
-                if (error.message.includes('permission-denied')) {
-                    this.showError("Database Permission Denied - check rules");
+        this.unsubscribe = onSnapshot(q, (snapshot) => {
+            // Clear welcome message on first real message
+            const welcomeMsg = this.messagesContainer.querySelector('.welcome-msg');
+            if (welcomeMsg && snapshot.docs.length > 0) {
+                welcomeMsg.remove();
+            }
+
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    this.renderMessage(change.doc.data(), change.doc.id);
                 }
             });
+
+            // Scroll to bottom
+            this.scrollToBottom();
+        }, (error) => {
+            console.error('Firestore subscription error:', error);
+            this.setConnectionStatus('error', 'Sync Error');
+            // Expose error to user for debugging
+            if (error.message && error.message.includes('permission-denied')) {
+                this.showError("Database Permission Denied - check rules");
+            }
+        });
     }
 
     /**
-     * Send a message
+     * Send a message using modular SDK
      */
     async sendMessage(text) {
-        if (!text.trim()) return;
-        if (!this.db) {
+        if (!text.trim()) return false;
+        if (!this.db || !this.firestoreModule) {
             this.showError("Database not connected");
             return false;
         }
+
+        const { collection, addDoc, serverTimestamp } = this.firestoreModule;
 
         const message = {
             text: text.trim(),
             sender: 'user',
             senderEmail: this.user.email,
             senderName: this.user.name || this.user.email,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            timestamp: serverTimestamp(),
             status: 'pending', // pending, processing, completed
             source: 'web_portal'
         };
 
         try {
-            await this.db.collection('spark_messages').add(message);
-            console.log("Message sent to Firestore");
+            const messagesRef = collection(this.db, 'spark_messages');
+            const docRef = await addDoc(messagesRef, message);
+            console.log("Message sent to Firestore:", docRef.id);
             return true;
         } catch (error) {
             console.error('Send error:', error);
-            // ALWAY ALERT ON ERROR TO EXPOSE CAUSE
-            alert(`Portal Error: ${error.message}\nDatabase: ${this.db._databaseId?.database || 'unknown'}`);
+            // Alert for debugging
+            alert(`Send Error: ${error.message}`);
             this.showError('Failed to send message');
             return false;
         }
