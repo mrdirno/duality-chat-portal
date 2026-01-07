@@ -16,15 +16,14 @@ class SparkChat {
 
     /**
      * Initialize Firestore connection with NAMED DATABASE
-     * Uses Firebase modular SDK with proper interop for named database support
+     * Uses Firebase modular SDK - initializes its own app instance for Firestore
      */
     async init(user) {
         this.user = user;
         const dbName = 'helios-spark-zero';
 
         try {
-            // Import modular SDK functions - use SAME version as compat SDK (9.22.0)
-            // This ensures compatibility between compat auth and modular Firestore
+            // Import modular SDK functions
             const firestoreModule = await import(
                 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js'
             );
@@ -34,16 +33,27 @@ class SparkChat {
 
             const { getFirestore, collection, query, orderBy, limitToLast,
                     onSnapshot, addDoc, serverTimestamp } = firestoreModule;
-            const { getApp } = appModule;
+            const { initializeApp, getApps } = appModule;
 
             // Store module references for later use
             this.firestoreModule = { collection, query, orderBy, limitToLast,
                                      onSnapshot, addDoc, serverTimestamp };
 
-            // Get app using modular SDK's getApp() for proper interop
-            // The compat SDK's firebase.initializeApp() registers the app
-            // and modular getApp() can retrieve it
-            const app = getApp();
+            // Initialize a SEPARATE Firebase app for Firestore using modular SDK
+            // This avoids conflicts with the compat SDK used for auth
+            const firestoreAppName = 'firestore-app';
+            let app;
+
+            // Check if app already exists to avoid re-initialization errors
+            const existingApps = getApps();
+            const existingApp = existingApps.find(a => a.name === firestoreAppName);
+
+            if (existingApp) {
+                app = existingApp;
+            } else {
+                // Initialize new app with same config (from CONFIG global)
+                app = initializeApp(CONFIG.FIREBASE, firestoreAppName);
+            }
 
             // Get Firestore instance with NAMED DATABASE
             this.db = getFirestore(app, dbName);
@@ -52,8 +62,7 @@ class SparkChat {
 
         } catch (e) {
             console.error("Firestore init failed:", e);
-            // Show detailed error for debugging
-            const errorMsg = `Firestore Error: ${e.message}\n\nThis may be a Firebase configuration issue. Check console for details.`;
+            const errorMsg = `Firestore Error: ${e.message}\n\nCheck console for details.`;
             alert(errorMsg);
             this.showError("Failed to initialize database");
             return;
@@ -157,42 +166,30 @@ class SparkChat {
     }
 
     /**
-     * Render a message in the chat
+     * Render a message - BULLETPROOF SIMPLE VERSION
      */
     renderMessage(msg, id) {
-        // Check if message already rendered
         if (document.getElementById(`msg-${id}`)) return;
 
-        // Determine if user or operator (anything not 'user' is operator)
         const isUser = msg.sender === 'user';
-
         const div = document.createElement('div');
         div.id = `msg-${id}`;
-        div.className = `message-row ${isUser ? 'user' : 'operator'}`;
+        div.className = `message ${isUser ? 'from-user' : 'from-spark'}`;
 
         const time = msg.timestamp
             ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
             : 'now';
 
-        const senderLabel = isUser
-            ? 'You'
-            : (msg.senderName || 'SPARK');
-
-        // Avatar: User gets their initial, operator gets robot icon
-        const avatarContent = isUser
-            ? (this.user?.name?.[0] || this.user?.email?.[0] || 'U').toUpperCase()
-            : '🤖';
+        const name = isUser ? 'You' : (msg.senderName || 'SPARK');
+        const avatar = isUser ? '👤' : '🤖';
 
         div.innerHTML = `
-            <div class="message-avatar ${isUser ? 'user' : 'operator'}">${avatarContent}</div>
-            <div class="message-bubble ${isUser ? 'user' : 'operator'}">
-                <div class="message-header">
-                    <span class="message-sender">${this.escapeHtml(senderLabel)}</span>
-                    <span class="message-time">${time}</span>
-                </div>
-                <div class="message-text">${this.escapeHtml(msg.text)}</div>
-                ${msg.status === 'pending' ? '<div class="message-status">Sending...</div>' : ''}
+            <div class="msg-line">
+                <span class="avatar">${avatar}</span>
+                <strong>${this.escapeHtml(name)}</strong>
+                <span class="time">${time}</span>
             </div>
+            <div class="msg-text">${this.escapeHtml(msg.text)}</div>
         `;
 
         this.messagesContainer.appendChild(div);
