@@ -1,0 +1,19 @@
+[
+  {
+    "id": "session_001",
+    "title": "Welcome to DUALITY Chat Portal",
+    "date": "2026-01-07T00:00:00.000Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "How does the chat portal work?",
+        "timestamp": "2026-01-07T00:00:00.000Z"
+      },
+      {
+        "role": "assistant",
+        "content": "Welcome to DUALITY Chat Portal! This secure portal allows you to:\n\n1. **Access chat history** from anywhere in the world\n2. **Search conversations** across all sessions\n3. **Export data** in JSON format\n\nYour data is protected with:\n- Password authentication\n- Time-based One-Time Password (TOTP) - compatible with Google Authenticator\n- Client-side encryption\n\nTo get started, set up 2FA using the link on the login page.",
+        "timestamp": "2026-01-07T00:00:30.000Z"
+      }
+    ]
+  }
+]
