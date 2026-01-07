@@ -6,8 +6,8 @@ const CONFIG = {
     // Firebase Configuration
     FIREBASE: {
         apiKey: "AIzaSyBGcUUY27MpHq9_Ss-zVuo1Vaj1Rf5A0Fs",
-        authDomain: "mrdirno.github.io",
-        projectId: "duality-chat-portal"
+        authDomain: "gen-lang-client-0863290025.firebaseapp.com",
+        projectId: "gen-lang-client-0863290025"
     },
 
     // Authorized email addresses (only these can access the portal)
