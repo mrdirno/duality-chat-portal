@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DUALITY Chat Portal</title>
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div id="app">
@@ -18,62 +18,36 @@
                 </div>
                 <p class="subtitle">Secure Chat Access</p>
 
-                <form id="login-form">
-                    <div class="input-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" placeholder="Enter your password" required>
+                <div class="google-signin-wrapper">
+                    <p class="signin-info">Sign in with your authorized Google account</p>
+
+                    <div id="g_id_onload"
+                         data-client_id="YOUR_CLIENT_ID.apps.googleusercontent.com"
+                         data-context="signin"
+                         data-ux_mode="popup"
+                         data-callback="handleGoogleSignIn"
+                         data-auto_prompt="false">
                     </div>
 
-                    <div class="input-group">
-                        <label for="totp">Authentication Code</label>
-                        <input type="text" id="totp" placeholder="6-digit code" maxlength="6" pattern="[0-9]{6}" required>
-                        <span class="hint">Enter code from your authenticator app</span>
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-shape="rectangular"
+                         data-theme="filled_black"
+                         data-text="signin_with"
+                         data-size="large"
+                         data-logo_alignment="left"
+                         data-width="300">
                     </div>
-
-                    <button type="submit" class="btn-primary">
-                        <span>Authenticate</span>
-                        <svg viewBox="0 0 24 24" width="20" height="20">
-                            <path fill="currentColor" d="M12 17a2 2 0 0 0 2-2 2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2h1m-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3Z"/>
-                        </svg>
-                    </button>
-                </form>
+                </div>
 
                 <div id="login-error" class="error-message hidden"></div>
 
-                <div class="setup-link">
-                    <a href="#" id="show-setup">First time? Set up 2FA</a>
+                <div class="authorized-note">
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                        <path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+                    </svg>
+                    <span>Access restricted to authorized accounts only</span>
                 </div>
-            </div>
-        </div>
-
-        <!-- 2FA Setup Screen -->
-        <div id="setup-screen" class="screen">
-            <div class="setup-container">
-                <h2>Set Up Two-Factor Authentication</h2>
-                <p>Scan this QR code with your authenticator app:</p>
-
-                <div id="qr-container">
-                    <canvas id="qr-code"></canvas>
-                </div>
-
-                <div class="secret-display">
-                    <p>Or enter this secret manually:</p>
-                    <code id="secret-key"></code>
-                    <button id="copy-secret" class="btn-secondary">Copy</button>
-                </div>
-
-                <div class="input-group">
-                    <label for="setup-password">Create Password</label>
-                    <input type="password" id="setup-password" placeholder="Create a strong password" required>
-                </div>
-
-                <div class="input-group">
-                    <label for="verify-totp">Verify Code</label>
-                    <input type="text" id="verify-totp" placeholder="Enter 6-digit code to verify" maxlength="6">
-                </div>
-
-                <button id="complete-setup" class="btn-primary">Complete Setup</button>
-                <button id="back-to-login" class="btn-secondary">Back to Login</button>
             </div>
         </div>
 
@@ -85,7 +59,10 @@
                     <h1>DUALITY Chat Portal</h1>
                 </div>
                 <div class="header-right">
-                    <span id="session-timer">Session: 00:00</span>
+                    <div class="user-info">
+                        <img id="user-avatar" src="" alt="User" class="user-avatar">
+                        <span id="user-email"></span>
+                    </div>
                     <button id="logout-btn" class="btn-logout">Logout</button>
                 </div>
             </header>
@@ -102,6 +79,8 @@
                         </ul>
                     </nav>
                     <div class="sidebar-footer">
+                        <button id="import-btn" class="btn-secondary">Import Data</button>
+                        <input type="file" id="import-file" accept=".json" style="display:none">
                         <button id="export-btn" class="btn-secondary">Export Data</button>
                     </div>
                 </aside>
@@ -132,10 +111,9 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="js/totp.js"></script>
-    <script src="js/auth.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth-google.js"></script>
     <script src="js/portal.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/app-google.js"></script>
 </body>
 </html>
