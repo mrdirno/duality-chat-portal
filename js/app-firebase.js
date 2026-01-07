@@ -1,5 +1,5 @@
 /**
- * DUALITY Chat Portal - Main Application (Google Auth Version)
+ * DUALITY Chat Portal - Main Application (Firebase Auth)
  */
 
 class App {
@@ -13,19 +13,14 @@ class App {
     /**
      * Initialize the application
      */
-    async init() {
+    init() {
         // Set up auth change handler
-        window.googleAuth.onAuthChange = (user) => this.handleAuthChange(user);
+        window.firebaseAuth.onAuthChange = (user) => this.handleAuthChange(user);
 
-        // Check for existing session
-        const hasSession = window.googleAuth.init();
+        // Initialize Firebase Auth
+        window.firebaseAuth.init();
 
-        if (hasSession) {
-            this.showPortal();
-        } else {
-            this.showLogin();
-        }
-
+        // Setup event listeners
         this.setupEventListeners();
     }
 
@@ -46,12 +41,6 @@ class App {
     showLogin() {
         this.screens.login.classList.add('active');
         this.screens.portal.classList.remove('active');
-
-        // Hide any previous errors
-        const errorEl = document.getElementById('login-error');
-        if (errorEl) {
-            errorEl.classList.add('hidden');
-        }
     }
 
     /**
@@ -62,7 +51,7 @@ class App {
         this.screens.portal.classList.add('active');
 
         // Update user info in header
-        const user = window.googleAuth.getUser();
+        const user = window.firebaseAuth.getUser();
         if (user) {
             const avatarEl = document.getElementById('user-avatar');
             const emailEl = document.getElementById('user-email');
@@ -85,12 +74,29 @@ class App {
      * Setup event listeners
      */
     setupEventListeners() {
+        // Google Sign-In button
+        const signInBtn = document.getElementById('google-signin-btn');
+        if (signInBtn) {
+            signInBtn.addEventListener('click', async () => {
+                signInBtn.disabled = true;
+                signInBtn.classList.add('loading');
+
+                try {
+                    await window.firebaseAuth.signInWithGoogle();
+                } catch (error) {
+                    // Error already handled in auth manager
+                } finally {
+                    signInBtn.disabled = false;
+                    signInBtn.classList.remove('loading');
+                }
+            });
+        }
+
         // Logout button
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                window.googleAuth.logout();
-                window.location.reload();
+            logoutBtn.addEventListener('click', async () => {
+                await window.firebaseAuth.logout();
             });
         }
 
@@ -111,25 +117,6 @@ class App {
                 }
             });
         }
-
-        // Extend session on activity
-        ['click', 'keypress', 'scroll'].forEach(event => {
-            document.addEventListener(event, () => {
-                if (window.googleAuth.isLoggedIn()) {
-                    window.googleAuth.extendSession();
-                }
-            });
-        });
-
-        // Check session periodically
-        setInterval(() => {
-            if (this.screens.portal.classList.contains('active')) {
-                if (!window.googleAuth.isSessionValid()) {
-                    window.googleAuth.logout();
-                    window.location.reload();
-                }
-            }
-        }, 60000); // Check every minute
     }
 }
 

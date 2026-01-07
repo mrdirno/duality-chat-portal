@@ -595,9 +595,58 @@ body {
     margin-bottom: 20px;
 }
 
-.g_id_signin {
+/* Google Sign-In Button */
+.btn-google {
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    background: white;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    color: #3c4043;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-google:hover {
+    background: #f8f9fa;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-google:active {
+    background: #f1f3f4;
+}
+
+.btn-google:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-google.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn-google.loading svg {
+    visibility: hidden;
+}
+
+.btn-google.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #dadce0;
+    border-top-color: #4285f4;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
 }
 
 .authorized-note {
