@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DUALITY Chat Portal</title>
+    <title>DUALITY Spark</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -13,9 +13,9 @@
             <div class="login-container">
                 <div class="logo">
                     <div class="logo-icon">D</div>
-                    <h1>DUALITY Portal</h1>
+                    <h1>DUALITY Spark</h1>
                 </div>
-                <p class="subtitle">Secure Chat Access</p>
+                <p class="subtitle">Global Chat Access</p>
 
                 <div class="google-signin-wrapper">
                     <p class="signin-info">Sign in with your authorized Google account</p>
@@ -47,57 +47,42 @@
             <header class="portal-header">
                 <div class="header-left">
                     <div class="logo-small">D</div>
-                    <h1>DUALITY Chat Portal</h1>
+                    <h1>DUALITY Spark</h1>
                 </div>
                 <div class="header-right">
-                    <div class="user-info">
-                        <img id="user-avatar" src="" alt="User" class="user-avatar">
-                        <span id="user-email"></span>
+                    <div class="connection-status" id="connection-status">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Connecting...</span>
                     </div>
                     <button id="logout-btn" class="btn-logout">Logout</button>
                 </div>
             </header>
 
-            <main class="portal-main">
-                <aside class="sidebar">
-                    <div class="search-container">
-                        <input type="text" id="search-chats" placeholder="Search conversations...">
-                    </div>
-                    <nav class="chat-nav">
-                        <h3>Recent Sessions</h3>
-                        <ul id="session-list">
-                            <!-- Sessions loaded dynamically -->
-                        </ul>
-                    </nav>
-                    <div class="sidebar-footer">
-                        <button id="import-btn" class="btn-secondary">Import Data</button>
-                        <input type="file" id="import-file" accept=".json" style="display:none">
-                        <button id="export-btn" class="btn-secondary">Export Data</button>
-                    </div>
-                </aside>
-
-                <section class="chat-viewer">
-                    <div id="chat-content">
-                        <div class="welcome-message">
-                            <h2>Welcome to DUALITY Chat Portal</h2>
-                            <p>Select a session from the sidebar or search for specific conversations.</p>
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <span class="stat-value" id="total-sessions">0</span>
-                                    <span class="stat-label">Total Sessions</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value" id="total-messages">0</span>
-                                    <span class="stat-label">Messages</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value" id="last-active">--</span>
-                                    <span class="stat-label">Last Active</span>
-                                </div>
-                            </div>
+            <main class="chat-main">
+                <div class="chat-container">
+                    <div id="messages-container" class="messages-container">
+                        <div class="welcome-msg">
+                            <h2>Spark Connected</h2>
+                            <p>Send messages to your DUALITY system from anywhere.</p>
                         </div>
                     </div>
-                </section>
+
+                    <form id="chat-form" class="chat-form">
+                        <div class="input-wrapper">
+                            <textarea
+                                id="message-input"
+                                placeholder="Type your message..."
+                                rows="1"
+                                autofocus
+                            ></textarea>
+                            <button type="submit" id="send-btn" class="send-btn">
+                                <svg viewBox="0 0 24 24" width="24" height="24">
+                                    <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </main>
         </div>
     </div>
@@ -105,10 +90,11 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <script src="js/config.js"></script>
     <script src="js/auth-firebase.js"></script>
-    <script src="js/portal.js"></script>
-    <script src="js/app-firebase.js"></script>
+    <script src="js/spark-chat.js"></script>
+    <script src="js/app-spark.js"></script>
 </body>
 </html>
