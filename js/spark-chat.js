@@ -16,15 +16,22 @@ class SparkChat {
      */
     init(user) {
         this.user = user;
+        const dbName = 'helios-spark-zero';
+        
         try {
-            // Attempt to connect to named database 'helios-spark-zero'
-            // This syntax works for some versions of the JS SDK
-            this.db = firebase.app().firestore('helios-spark-zero');
+            // Attempt 1: Specific named database
+            this.db = firebase.app().firestore(dbName);
+            console.log(`Firestore connected to: ${dbName}`);
         } catch (e) {
-            console.warn("Named DB init failed, falling back to default/hack", e);
-            // Fallback: Try to force the database ID internally if possible, or just use default
-            // and hope the user created the default DB.
-            this.db = firebase.firestore();
+            console.warn("Named DB init failed, trying default", e);
+            try {
+                // Attempt 2: Default database
+                this.db = firebase.firestore();
+                console.log("Firestore connected to: (default)");
+            } catch (e2) {
+                console.error("Firestore initialization failed completely", e2);
+                this.showError("Failed to initialize database");
+            }
         }
         
         this.messagesContainer = document.getElementById('messages-container');
@@ -55,6 +62,8 @@ class SparkChat {
             this.unsubscribe();
         }
 
+        if (!this.db) return;
+
         this.unsubscribe = this.db.collection('spark_messages')
             .orderBy('timestamp', 'asc')
             .limitToLast(100)
@@ -74,8 +83,12 @@ class SparkChat {
                 // Scroll to bottom
                 this.scrollToBottom();
             }, (error) => {
-                console.error('Firestore error:', error);
-                this.setConnectionStatus('error', 'Connection error');
+                console.error('Firestore subscription error:', error);
+                this.setConnectionStatus('error', 'Sync Error');
+                // Expose error to user for debugging
+                if (error.message.includes('permission-denied')) {
+                    this.showError("Database Permission Denied - check rules");
+                }
             });
     }
 
@@ -84,6 +97,10 @@ class SparkChat {
      */
     async sendMessage(text) {
         if (!text.trim()) return;
+        if (!this.db) {
+            this.showError("Database not connected");
+            return false;
+        }
 
         const message = {
             text: text.trim(),
@@ -97,9 +114,12 @@ class SparkChat {
 
         try {
             await this.db.collection('spark_messages').add(message);
+            console.log("Message sent to Firestore");
             return true;
         } catch (error) {
             console.error('Send error:', error);
+            // ALWAY ALERT ON ERROR TO EXPOSE CAUSE
+            alert(`Portal Error: ${error.message}\nDatabase: ${this.db._databaseId?.database || 'unknown'}`);
             this.showError('Failed to send message');
             return false;
         }
